@@ -1,0 +1,1180 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Калькулятор Round Robin с диаграммой Ганта и расчётом времени ожидания.">
+    <title>Round Robin — Scheduler Lab</title>
+
+    <style>
+        :root {
+            color-scheme: light;
+            --ink: #182a33;
+            --muted: #718088;
+            --line: #e3e8e7;
+            --green: #147d66;
+            --paper: #f5f7f5;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            background: var(--paper);
+            color: var(--ink);
+            font-family: "Segoe UI", Arial, sans-serif;
+            font-size: 14px;
+        }
+
+        button,
+        input {
+            font: inherit;
+        }
+
+        button {
+            cursor: pointer;
+        }
+
+        button:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        button:focus-visible,
+        input:focus-visible,
+        summary:focus-visible {
+            outline: 3px solid #58baa0;
+            outline-offset: 3px;
+        }
+
+        header {
+            border-bottom: 1px solid var(--line);
+            background: #fff;
+        }
+
+        nav {
+            max-width: 1280px;
+            height: 76px;
+            margin: auto;
+            padding: 0 40px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 16px;
+            font-weight: 750;
+        }
+
+        .logo {
+            display: grid;
+            place-items: center;
+            width: 32px;
+            height: 32px;
+            border-radius: 9px;
+            background: var(--green);
+            color: #fff;
+            font-size: 22px;
+        }
+
+        .navnote {
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        main {
+            max-width: 1280px;
+            margin: auto;
+            padding: 42px 40px 28px;
+        }
+
+        .eyebrow {
+            margin: 0 0 13px;
+            color: var(--green);
+            font-size: 11px;
+            font-weight: 750;
+            letter-spacing: 2px;
+        }
+
+        h1 {
+            margin: 0 0 14px;
+            font-size: 44px;
+            font-weight: 700;
+            line-height: 1.15;
+            letter-spacing: -1.8px;
+        }
+
+        h2 {
+            margin: 0;
+            font-size: 17px;
+            letter-spacing: -0.3px;
+        }
+
+        .intro {
+            margin: 0 0 32px;
+            color: var(--muted);
+            font-size: 15px;
+            line-height: 1.7;
+        }
+
+        .layout {
+            display: grid;
+            grid-template-columns: 350px minmax(0, 1fr);
+            align-items: start;
+            gap: 24px;
+        }
+
+        .card {
+            padding: 24px;
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            background: #fff;
+        }
+
+        .cardhead {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 23px;
+        }
+
+        .step {
+            color: #8c999e;
+            font-family: Consolas, monospace;
+            font-size: 11px;
+        }
+
+        .field {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 22px;
+        }
+
+        .field small {
+            display: block;
+            margin-top: 6px;
+            color: var(--muted);
+            font-size: 11px;
+        }
+
+        .field input {
+            width: 80px;
+            background: var(--paper);
+            text-align: center;
+            font-weight: 700;
+        }
+
+        input {
+            width: 100%;
+            min-width: 0;
+            padding: 9px;
+            border: 1px solid var(--line);
+            border-radius: 7px;
+            color: var(--ink);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th {
+            padding: 0 0 12px;
+            color: var(--muted);
+            font-size: 10px;
+            font-weight: 650;
+            letter-spacing: 0.7px;
+        }
+
+        td {
+            padding: 7px 6px 7px 0;
+        }
+
+        th:last-child,
+        td:last-child {
+            padding-right: 0;
+        }
+
+        .inputs th:first-child {
+            width: 68px;
+        }
+
+        .inputs th:nth-child(2),
+        .inputs th:nth-child(3) {
+            width: 90px;
+        }
+
+        .inputs input {
+            padding: 8px;
+            text-align: center;
+        }
+
+        .process {
+            font-size: 12px;
+            font-weight: 650;
+            white-space: nowrap;
+        }
+
+        .dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            margin-right: 7px;
+            border-radius: 50%;
+            background: var(--pc);
+        }
+
+        .delete {
+            width: 26px;
+            padding: 0;
+            border: 0;
+            background: none;
+            color: #8a969c;
+            font-size: 21px;
+        }
+
+        .add {
+            width: 100%;
+            margin-top: 12px;
+            padding: 11px;
+            border: 1px dashed #cbd6d1;
+            border-radius: 8px;
+            background: #fff;
+            color: var(--green);
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .actions {
+            display: flex;
+            gap: 9px;
+            margin-top: 25px;
+        }
+
+        .primary {
+            flex: 1;
+            padding: 13px 16px;
+            border: 0;
+            border-radius: 8px;
+            background: var(--green);
+            color: #fff;
+            font-weight: 650;
+        }
+
+        .primary:hover {
+            background: #10664f;
+        }
+
+        .secondary {
+            padding: 11px 13px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: #fff;
+            color: #53646d;
+            font-size: 12px;
+        }
+
+        .hint {
+            margin: 17px 0 0;
+            color: var(--muted);
+            font-size: 11px;
+            line-height: 1.7;
+        }
+
+        .error {
+            margin: 12px 0 0;
+            color: #b34035;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+
+        .results {
+            display: grid;
+            gap: 20px;
+            min-width: 0;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: 1.3fr 1fr 1fr;
+            gap: 12px;
+        }
+
+        .stat {
+            padding: 21px 19px;
+            border: 1px solid var(--line);
+            border-radius: 13px;
+            background: #fff;
+        }
+
+        .stat.featured {
+            border-color: #cee5d8;
+            background: #e5f2eb;
+        }
+
+        .statlabel {
+            color: #657b70;
+            font-size: 11px;
+            line-height: 1.5;
+        }
+
+        .value {
+            display: block;
+            margin: 10px 0 5px;
+            font-size: 35px;
+            font-weight: 650;
+            font-variant-numeric: tabular-nums;
+            letter-spacing: -1.5px;
+        }
+
+        .featured .value {
+            color: #136349;
+        }
+
+        .unit {
+            color: var(--muted);
+            font-size: 10px;
+        }
+
+        .badge {
+            padding: 6px 9px;
+            border-radius: 20px;
+            background: #edf5ef;
+            color: var(--green);
+            font-size: 10px;
+            white-space: nowrap;
+        }
+
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 20px;
+            color: #62757d;
+            font-size: 11px;
+        }
+
+        .chartscroll {
+            overflow-x: auto;
+            padding: 5px 5px 25px;
+        }
+
+        .timeline {
+            display: flex;
+            width: 100%;
+            height: 65px;
+            margin-top: 8px;
+        }
+
+        .slice {
+            position: relative;
+            display: flex;
+            flex-shrink: 0;
+            align-items: center;
+            justify-content: center;
+            min-width: 0;
+            border: 1px solid #fff;
+            background: var(--pc);
+            color: #fff;
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .slice:first-child {
+            border-radius: 7px 0 0 7px;
+        }
+
+        .slice:last-child {
+            border-radius: 0 7px 7px 0;
+        }
+
+        .tick {
+            position: absolute;
+            bottom: -22px;
+            left: 0;
+            color: #78878d;
+            font-family: Consolas, monospace;
+            font-size: 10px;
+            font-weight: 400;
+            transform: translateX(-25%);
+        }
+
+        .endtick {
+            right: 0;
+            left: auto;
+            transform: translateX(25%);
+        }
+
+        .idle {
+            background: repeating-linear-gradient(
+                135deg,
+                #f0f2f2,
+                #f0f2f2 5px,
+                #e7eceb 5px,
+                #e7eceb 6px
+            );
+            color: #77858b;
+        }
+
+        .chartnote {
+            margin: 20px 0 0;
+            color: var(--muted);
+            font-size: 11px;
+        }
+
+        .resulttable {
+            overflow: auto;
+        }
+
+        .resulttable table {
+            min-width: 440px;
+        }
+
+        .resulttable th {
+            padding-bottom: 15px;
+            font-size: 10px;
+            letter-spacing: 0.2px;
+        }
+
+        .resulttable td {
+            padding: 13px 8px 13px 0;
+            border-top: 1px solid #eef1ef;
+            font-size: 12px;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .resulttable th:not(:first-child),
+        .resulttable td:not(:first-child) {
+            text-align: right;
+        }
+
+        .wait {
+            color: var(--green);
+            font-weight: 700;
+        }
+
+        .formula {
+            margin-top: 8px;
+            padding: 13px 15px;
+            border-radius: 8px;
+            background: var(--paper);
+            color: #5e716b;
+            font-size: 12px;
+            line-height: 1.7;
+        }
+
+        .explain {
+            padding: 0 4px;
+            color: var(--muted);
+            font-size: 12px;
+            line-height: 1.8;
+        }
+
+        .explain summary {
+            color: #566b63;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .explain p {
+            margin: 10px 0;
+        }
+
+        .footer {
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
+            margin-top: 34px;
+            color: #8b979b;
+            font-size: 10px;
+        }
+
+        .stale {
+            background: #fff5df;
+            color: #a57625;
+        }
+
+        @media (min-width: 1200px) {
+            main {
+                padding-top: 50px;
+            }
+        }
+
+        @media (max-width: 950px) {
+            .layout {
+                grid-template-columns: 300px minmax(0, 1fr);
+                gap: 16px;
+            }
+
+            .card {
+                padding: 18px;
+            }
+
+            .stats {
+                gap: 8px;
+            }
+
+            .stat {
+                padding: 15px 12px;
+            }
+
+            .value {
+                font-size: 29px;
+            }
+        }
+
+        @media (max-width: 760px) {
+            nav {
+                height: 64px;
+                padding: 0 20px;
+            }
+
+            main {
+                padding: 30px 18px;
+            }
+
+            h1 {
+                font-size: 36px;
+            }
+
+            .layout {
+                grid-template-columns: 1fr;
+            }
+
+            .intro {
+                margin-bottom: 24px;
+            }
+
+            .navnote,
+            .statlabel {
+                font-size: 10px;
+            }
+
+            .footer {
+                flex-direction: column;
+            }
+
+            .value {
+                font-size: 30px;
+            }
+        }
+
+        @media (prefers-reduced-motion: no-preference) {
+            button {
+                transition: background 0.15s, opacity 0.15s;
+            }
+
+            .card {
+                animation: appear 0.3s ease-out;
+            }
+
+            @keyframes appear {
+                from {
+                    opacity: 0;
+                    transform: translateY(5px);
+                }
+
+                to {
+                    opacity: 1;
+                    transform: none;
+                }
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <nav>
+            <div class="brand">
+                <span class="logo" aria-hidden="true">↻</span>
+                Scheduler Lab
+            </div>
+
+            <span class="navnote">АЛГОРИТМЫ ПЛАНИРОВАНИЯ / 01</span>
+        </nav>
+    </header>
+
+    <main>
+        <p class="eyebrow">CPU SCHEDULING · ROUND ROBIN</p>
+        <h1>Каждому — своё время.</h1>
+
+        <p class="intro">
+            Задай процессы и квант. Посмотри, как распределяется время CPU,<br>
+            и узнай среднее время ожидания.
+        </p>
+
+        <div class="layout">
+            <form class="card" id="form">
+                <div class="cardhead">
+                    <h2>Параметры</h2>
+                    <span class="step">01 / ВВОД</span>
+                </div>
+
+                <label class="field">
+                    <span>
+                        Квант времени
+                        <small>Time quantum · q</small>
+                    </span>
+
+                    <input
+                        id="quantum"
+                        type="number"
+                        min="1"
+                        max="1000000"
+                        step="1"
+                        value="2"
+                        required
+                        aria-label="Квант времени"
+                    >
+                </label>
+
+                <table class="inputs">
+                    <thead>
+                        <tr>
+                            <th>ПРОЦЕСС</th>
+                            <th title="Arrival time">ПРИХОД</th>
+                            <th title="Burst time">ДЛИТЕЛЬН.</th>
+                            <th aria-label="Удаление процесса"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="inputs"></tbody>
+                </table>
+
+                <button class="add" id="add" type="button">
+                    + Добавить процесс
+                </button>
+
+                <div class="actions">
+                    <button class="primary" type="submit">
+                        Рассчитать <span aria-hidden="true">→</span>
+                    </button>
+
+                    <button class="secondary" id="example" type="button">
+                        Пример
+                    </button>
+                </div>
+
+                <p id="error" class="error" role="alert" hidden></p>
+
+                <p class="hint">
+                    Приход — момент появления процесса.<br>
+                    Длительность — необходимое ему время CPU.<br>
+                    Все значения — целые, в условных единицах.
+                </p>
+            </form>
+
+            <section class="results" aria-label="Результаты расчёта">
+                <div class="stats" aria-live="polite">
+                    <div class="stat featured">
+                        <div class="statlabel">Среднее ожидание · AWT</div>
+                        <strong class="value" id="awt">—</strong>
+                        <span class="unit">ед. времени</span>
+                    </div>
+
+                    <div class="stat">
+                        <div class="statlabel">Средний оборот · ATAT</div>
+                        <strong class="value" id="atat">—</strong>
+                        <span class="unit">ед. времени</span>
+                    </div>
+
+                    <div class="stat">
+                        <div class="statlabel">Завершение</div>
+                        <strong class="value" id="total">—</strong>
+                        <span class="unit">момент времени</span>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="cardhead">
+                        <h2>Диаграмма Ганта</h2>
+                        <span class="badge" id="status">Готово к расчёту</span>
+                    </div>
+
+                    <div
+                        class="chartscroll"
+                        tabindex="0"
+                        aria-label="Диаграмма Ганта, прокручивается по горизонтали"
+                    >
+                        <div class="timeline" id="timeline"></div>
+                    </div>
+
+                    <div class="legend" id="legend"></div>
+
+                    <p class="chartnote">
+                        Ширина блока соответствует времени выполнения.
+                        Наведи на блок для деталей.
+                    </p>
+                </div>
+
+                <div class="card">
+                    <div class="cardhead">
+                        <h2>По процессам</h2>
+                        <span class="step">02 / РЕЗУЛЬТАТ</span>
+                    </div>
+
+                    <div class="resulttable">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Процесс</th>
+                                    <th title="Arrival time">Приход<br>AT</th>
+                                    <th title="Burst time">Длительность<br>BT</th>
+                                    <th title="Completion time">Завершение<br>CT</th>
+                                    <th title="Turnaround time">Оборот<br>TAT</th>
+                                    <th title="Waiting time">Ожидание<br>WT</th>
+                                </tr>
+                            </thead>
+                            <tbody id="resultrows"></tbody>
+                        </table>
+                    </div>
+
+                    <div class="formula" id="formula">
+                        AWT = сумма времени ожидания / число процессов
+                    </div>
+                </div>
+
+                <details class="explain">
+                    <summary>Как работает расчёт?</summary>
+
+                    <p>
+                        Round Robin выдаёт каждому процессу до q единиц CPU за
+                        один ход. Незавершённый процесс возвращается в конец
+                        очереди. Новые процессы, пришедшие во время хода или
+                        ровно на его границе, встают в очередь перед
+                        возвращаемым процессом. При одновременном приходе
+                        используется порядок строк.
+                    </p>
+
+                    <p>
+                        TAT = CT − AT; WT = TAT − BT; AWT = ΣWT / n.
+                        Если очередь пуста, CPU простаивает до следующего
+                        прихода. Время переключения контекста считается
+                        нулевым. Не более 50 процессов и 5 000 блоков выполнения.
+                    </p>
+                </details>
+            </section>
+        </div>
+
+        <footer class="footer">
+            <span>ROUND ROBIN / Интерактивная лаборатория</span>
+            <span>Всё считается в браузере · Без отправки данных</span>
+        </footer>
+    </main>
+
+    <script>
+        'use strict';
+
+        const colors = [
+            '#23765b', '#365fa3', '#99521f', '#77509b',
+            '#a33e5d', '#28717f', '#706b24', '#596579'
+        ];
+
+        const maxProcesses = 50;
+        const maxValue = 1_000_000;
+        const maxBlocks = 5_000;
+
+        const numberFormat = new Intl.NumberFormat('ru-RU', {
+            maximumFractionDigits: 2
+        });
+
+        function getElement(id) {
+            return document.getElementById(id);
+        }
+
+        const form = getElement('form');
+        const processTable = getElement('inputs');
+        const quantumInput = getElement('quantum');
+        const addButton = getElement('add');
+        const statusBadge = getElement('status');
+        const errorMessage = getElement('error');
+        const timeline = getElement('timeline');
+        const legend = getElement('legend');
+        const resultTable = getElement('resultrows');
+        const formula = getElement('formula');
+
+        let nextId = 1;
+
+        function isIntegerInRange(value, min, max) {
+            return Number.isSafeInteger(value) && value >= min && value <= max;
+        }
+
+        function validate(processes, quantum) {
+            if (!isIntegerInRange(quantum, 1, maxValue)) {
+                throw new Error(
+                    'Квант должен быть целым числом от 1 до 1 000 000.'
+                );
+            }
+
+            if (processes.length === 0 || processes.length > maxProcesses) {
+                throw new Error('Добавь от 1 до 50 процессов.');
+            }
+
+            let blockCount = 0;
+
+            for (const process of processes) {
+                const validArrival = isIntegerInRange(process.at, 0, maxValue);
+                const validBurst = isIntegerInRange(process.bt, 1, maxValue);
+
+                if (!validArrival || !validBurst) {
+                    throw new Error(
+                        'Приход: целое число от 0 до 1 000 000. ' +
+                        'Длительность: от 1 до 1 000 000.'
+                    );
+                }
+
+                blockCount += Math.ceil(process.bt / quantum);
+            }
+
+            if (blockCount > maxBlocks) {
+                throw new Error(
+                    'Получится больше 5 000 блоков. ' +
+                    'Увеличь квант или уменьши длительности.'
+                );
+            }
+        }
+
+        function schedule(processes, quantum) {
+            validate(processes, quantum);
+
+            const rows = processes.map((process, index) => ({
+                ...process,
+                order: index,
+                remaining: process.bt,
+                ct: 0
+            }));
+
+            const arrivals = [...rows].sort((a, b) => {
+                return a.at - b.at || a.order - b.order;
+            });
+
+            const queue = [];
+            const segments = [];
+
+            let time = 0;
+            let nextArrival = 0;
+
+            function addArrivals() {
+                while (
+                    nextArrival < arrivals.length &&
+                    arrivals[nextArrival].at <= time
+                ) {
+                    queue.push(arrivals[nextArrival]);
+                    nextArrival++;
+                }
+            }
+
+            while (nextArrival < arrivals.length || queue.length > 0) {
+                addArrivals();
+
+                if (queue.length === 0) {
+                    const nextTime = arrivals[nextArrival].at;
+
+                    segments.push({
+                        id: null,
+                        start: time,
+                        end: nextTime
+                    });
+
+                    time = nextTime;
+                    addArrivals();
+                }
+
+                const process = queue.shift();
+                const duration = Math.min(quantum, process.remaining);
+
+                segments.push({
+                    id: process.id,
+                    start: time,
+                    end: time + duration,
+                    order: process.order
+                });
+
+                time += duration;
+                process.remaining -= duration;
+
+                // Сначала добавляем новые процессы, затем возвращаем текущий.
+                addArrivals();
+
+                if (process.remaining > 0) {
+                    queue.push(process);
+                } else {
+                    process.ct = time;
+                }
+            }
+
+            let totalWaiting = 0;
+            let totalTurnaround = 0;
+
+            for (const process of rows) {
+                process.tat = process.ct - process.at;
+                process.wt = process.tat - process.bt;
+
+                totalWaiting += process.wt;
+                totalTurnaround += process.tat;
+            }
+
+            return {
+                rows,
+                segments,
+                total: time,
+                awt: totalWaiting / rows.length,
+                atat: totalTurnaround / rows.length
+            };
+        }
+
+        function clearResults() {
+            statusBadge.textContent = 'Параметры изменены';
+            statusBadge.classList.add('stale');
+
+            for (const id of ['awt', 'atat', 'total']) {
+                getElement(id).textContent = '—';
+            }
+
+            timeline.replaceChildren();
+            legend.replaceChildren();
+            resultTable.replaceChildren();
+
+            formula.textContent = 'Нажми «Рассчитать», чтобы обновить результат.';
+            errorMessage.hidden = true;
+        }
+
+        function updateButtons() {
+            const count = processTable.children.length;
+
+            addButton.disabled = count >= maxProcesses;
+
+            for (const button of processTable.querySelectorAll('button')) {
+                button.disabled = count === 1;
+            }
+        }
+
+        function addRow(arrival = 0, burst = 4) {
+            if (processTable.children.length >= maxProcesses) {
+                return;
+            }
+
+            const id = nextId++;
+            const row = document.createElement('tr');
+
+            row.dataset.id = id;
+
+            row.innerHTML = `
+                <td class="process">P${id}</td>
+
+                <td>
+                    <input
+                        type="number"
+                        min="0"
+                        max="1000000"
+                        step="1"
+                        value="${arrival}"
+                        required
+                        aria-label="Приход P${id}"
+                    >
+                </td>
+
+                <td>
+                    <input
+                        type="number"
+                        min="1"
+                        max="1000000"
+                        step="1"
+                        value="${burst}"
+                        required
+                        aria-label="Длительность P${id}"
+                    >
+                </td>
+
+                <td>
+                    <button
+                        class="delete"
+                        type="button"
+                        aria-label="Удалить P${id}"
+                    >×</button>
+                </td>
+            `;
+
+            row.querySelector('button').addEventListener('click', () => {
+                row.remove();
+                updateButtons();
+                clearResults();
+            });
+
+            processTable.append(row);
+            updateButtons();
+        }
+
+        function addTick(block, time, isLast = false) {
+            const tick = document.createElement('span');
+
+            tick.className = isLast ? 'tick endtick' : 'tick';
+            tick.textContent = time;
+
+            block.append(tick);
+        }
+
+        function drawTimeline(segments, totalTime) {
+            timeline.replaceChildren();
+
+            const shortest = Math.min(
+                ...segments.map(segment => segment.end - segment.start)
+            );
+
+            const scale = Math.max(28, 44 / shortest);
+            timeline.style.minWidth = `${totalTime * scale}px`;
+
+            segments.forEach((segment, index) => {
+                const block = document.createElement('div');
+                const duration = segment.end - segment.start;
+                const isIdle = segment.id === null;
+                const label = isIdle ? 'Простой' : `P${segment.id}`;
+
+                block.className = isIdle ? 'slice idle' : 'slice';
+                block.style.width = `${duration / totalTime * 100}%`;
+
+                if (!isIdle) {
+                    const color = colors[segment.order % colors.length];
+                    block.style.setProperty('--pc', color);
+                }
+
+                block.textContent = label;
+                block.title =
+                    `${label}: ${segment.start} → ${segment.end} (${duration} ед.)`;
+
+                block.setAttribute('aria-label', block.title);
+
+                addTick(block, segment.start);
+
+                if (index === segments.length - 1) {
+                    addTick(block, segment.end, true);
+                }
+
+                timeline.append(block);
+            });
+        }
+
+        function drawTable(processes) {
+            legend.replaceChildren();
+            resultTable.replaceChildren();
+
+            for (const process of processes) {
+                const color = colors[process.order % colors.length];
+                const marker =
+                    `<i class="dot" style="--pc:${color}"></i>P${process.id}`;
+
+                const legendItem = document.createElement('span');
+                legendItem.innerHTML = marker;
+                legend.append(legendItem);
+
+                const row = document.createElement('tr');
+
+                row.innerHTML = `
+                    <td class="process">${marker}</td>
+                    <td>${process.at}</td>
+                    <td>${process.bt}</td>
+                    <td>${process.ct}</td>
+                    <td>${process.tat}</td>
+                    <td class="wait">${process.wt}</td>
+                `;
+
+                resultTable.append(row);
+            }
+        }
+
+        function showResults(result, quantum) {
+            errorMessage.hidden = true;
+
+            getElement('awt').textContent = numberFormat.format(result.awt);
+            getElement('atat').textContent = numberFormat.format(result.atat);
+            getElement('total').textContent = numberFormat.format(result.total);
+
+            statusBadge.textContent =
+                `q = ${quantum} · ${result.segments.length} блоков`;
+
+            statusBadge.classList.remove('stale');
+
+            drawTimeline(result.segments, result.total);
+            drawTable(result.rows);
+
+            const sum = result.rows.reduce((total, process) => {
+                return total + process.wt;
+            }, 0);
+
+            formula.textContent =
+                `AWT = ΣWT / n = ${sum} / ${result.rows.length} = ` +
+                `${numberFormat.format(result.awt)} ед.`;
+        }
+
+        function readProcesses() {
+            return [...processTable.children].map(row => {
+                const inputs = row.querySelectorAll('input');
+
+                return {
+                    id: Number(row.dataset.id),
+                    at: inputs[0].valueAsNumber,
+                    bt: inputs[1].valueAsNumber
+                };
+            });
+        }
+
+        function calculate() {
+            try {
+                const processes = readProcesses();
+                const quantum = quantumInput.valueAsNumber;
+                const result = schedule(processes, quantum);
+
+                showResults(result, quantum);
+            } catch (error) {
+                clearResults();
+                errorMessage.textContent = error.message;
+                errorMessage.hidden = false;
+            }
+        }
+
+        function loadExample() {
+            processTable.replaceChildren();
+            nextId = 1;
+            quantumInput.value = 2;
+
+            const processes = [
+                [0, 5],
+                [1, 4],
+                [2, 2],
+                [4, 1]
+            ];
+
+            for (const [arrival, burst] of processes) {
+                addRow(arrival, burst);
+            }
+
+            calculate();
+        }
+
+        form.addEventListener('submit', event => {
+            event.preventDefault();
+            calculate();
+        });
+
+        form.addEventListener('input', clearResults);
+
+        addButton.addEventListener('click', () => {
+            addRow();
+            clearResults();
+        });
+
+        getElement('example').addEventListener('click', loadExample);
+
+        loadExample();
+    </script>
+</body>
+</html>
